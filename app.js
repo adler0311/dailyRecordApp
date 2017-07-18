@@ -11,7 +11,9 @@ var session = require('express-session');
 var cookieParser = require('cookie-parser');
 
 var app = express();
-var db = mongojs('dailyRecordApp', ['list', 'users']);
+// var db = mongojs('dailyRecordApp', ['users']);
+var db = mongojs('mongodb://test:test@ds163232.mlab.com:63232/dailyrecord', ['workoutrecord']);
+
 
 // 미들웨어를 설정합니다.
 app.use(logger());
@@ -55,7 +57,8 @@ app.route('/register')
 
 					db.users.insert({
 						login: login,
-						hash: hash
+						hash: hash,
+						date: {}
 					}, function (error, result) {
 						if (error) {
 							response.sendStatus(500);
@@ -89,7 +92,7 @@ app.route('/login')
 			db.users.findOne({
 				login: login
 			}, function(error, result) {
-				if (error) {
+				if (result == null) {
 					response.send({message: '아이디가 존재하지 않습니다.'}, 400);
 				} else {
 					var hash = createHash(password);
