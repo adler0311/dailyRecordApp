@@ -11,7 +11,7 @@ AJAX, 구글 차트, Node.js, MongoDB를 사용하여 만들었습니다.
 3. `npm install` 을 실행하여 필요한 모듈을 다운받습니다.
 4. `node server.js` 커맨드를 사용하여 로컬 서버를 작동시킵니다.
 
-~~### web으로 접속하기~~
+### web으로 접속하기
 ~~1. 다음 사이트에 접속하세요.~~
 ~~`https://diaryrecordapp.appspot.com/`~~
 
