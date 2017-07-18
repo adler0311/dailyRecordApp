@@ -1,0 +1,32 @@
+{
+  "name": "dailyrecordapp",
+  "version": "1.0.0",
+  "description": "이 애플리케이션은 AJAX, 구글 차트, Node.js, MongoDB를 사용하여 신촌의 인근 지역 지도를 만들었습니다.",
+  "main": "server.js",
+  "dependencies": {
+    "body-parser": "^1.17.2",
+    "cookie-parser": "^1.4.3",
+    "crypto": "^0.0.3",
+    "express": "^4.15.3",
+    "express-session": "^1.15.3",
+    "mongodb": "^2.2.30",
+    "mongodb-stitch": "^0.0.20",
+    "mongojs": "^2.4.0",
+    "morgan": "^1.8.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adler0311/dailyRecordApp.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/adler0311/dailyRecordApp/issues"
+  },
+  "homepage": "https://github.com/adler0311/dailyRecordApp#readme"
+}
