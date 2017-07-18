@@ -1,0 +1,353 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Daily Record App</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="css/one-page-wonder.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+
+    <!-- javascript -->
+	<script src="https://code.jquery.com/jquery-3.2.1.min.js"
+			integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+  			crossorigin="anonymous">
+  	</script>
+
+    <!-- Bootstrap Core JavaScript -->
+    <script src="js/bootstrap.min.js"></script>
+  	<script>
+		var today = new Date();
+		var tMonth;
+		if (today.getMonth() + 1 < 10)
+		{
+			tMonth = "0" + (today.getMonth()+1);
+		} else {
+			tMonth = today.getMonth() + 1;
+		}
+
+		var tYear = today.getFullYear();
+		var tDay = today.getDate();
+		today = String(tMonth) + String(tDay);
+		var todayInputForm = tYear+'-'+tMonth+'-'+tDay;
+
+		function drag(ev) {
+	    	ev.dataTransfer.setData("text", ev.target.innerHTML);
+		}
+
+		function drop(ev) {
+			var previousAct = ev.target.innerHTML;
+		    ev.preventDefault();
+		    var activity = ev.dataTransfer.getData("text");
+		    var hour = $(ev.target).attr("id");
+			var dateToChange = $('#setDate').val();
+			var dateArray = dateToChange.split("-");
+			var currentDate = dateArray[1] + "" + dateArray[2];				
+
+			$.ajax('/user/records/'+ currentDate, {
+				type: 'POST',
+				data: { 
+					date: currentDate,
+					hour: hour,
+					activity: activity 
+				},
+				success: function () {
+					if (activity=="지우기") {
+						$(ev.target).html('');
+					} else {
+						$(ev.target).html(activity);
+					}
+				    updateTodayList(activity, previousAct);
+				    drawChart();
+			
+				},
+				error: function () {
+					alert("오류가 발생했습니다.");
+				}
+			});
+		}
+
+		function allowDrop(ev) {
+		    ev.preventDefault();
+		}
+
+		var todayData = [
+		  ['Task', 'Hours per Day'],
+		  ['비어 있음', 24]
+		]
+
+		var updateTodayList = function(activity, preAct) {
+			if (preAct != "") {
+				todayData[1][1] +=1;
+				for (var i in todayData) {
+					if (todayData[i][0] == preAct) {
+						if (todayData[i][1] == 1) {
+							todayData.splice(i, 1);
+						} else {
+							todayData[i][1] -= 1;
+						}
+					}
+				}
+			}
+
+			todayData[1][1] -=1;
+
+			if (activity != "지우기") {
+				for (var i in todayData) {
+					if (todayData[i][0] == activity) {
+						todayData[i][1] += 1;
+						return;
+					}
+				}
+				todayData.push([activity, 1]);
+			}
+		};
+	</script>
+	<script>
+  		$(document).ready(function() {
+  			$('#setDate').val(todayInputForm);
+
+  			$("#setDate-form").submit(function (event) {
+  				event.preventDefault();
+  				var dateToChange = $('#setDate').val();
+  				var dateArray = dateToChange.split("-");
+  				var properForm = dateArray[1] + "" + dateArray[2];
+  				constructTable(properForm);
+  				fetchingSpecificDayList(properForm);
+  			});
+
+
+  			var fetchingSpecificDayList = function (date) {
+  				$.getJSON('user/records/' + date, function (results) {
+					todayData = [
+						  ['Task', 'Hours per Day'],
+						  ['비어 있음', 24]
+					];
+
+  					$.each(results, function (hour, activity) {
+  						updateTodayList(activity, '');
+  					});
+
+  					google.charts.setOnLoadCallback(drawChart);
+  				});  				
+  			};
+
+  			var fetchFavoriteList = function () {
+  				var output = '';
+  				output += '<legend>자주하는 활동(드래그해서 추가할 수 있습니다)</legend>';
+  				output += '<button class="btn btn-default" draggable="true" ondragstart="drag(event)">지우기</button>';
+  				$('#favorites').html(output);
+
+				$.getJSON('/user/favorites', function (results) {
+  					$.each(results, function (index, item) {
+  						$('<button class="btn btn-default" ondragstart="drag(event)" draggable="true">'+item+'</button>').appendTo('#favorites');
+  					});
+  				});
+  			};
+
+  			var constructTable = function (date) {
+  				$.getJSON('user/records/'+ date, function (results) {
+  					console.log(results);
+	  				var $table = $('<table class="table"></table>');
+	  				var thead = '<thead><tr>';
+
+	  				for (var i = 0; i < 3; i++)
+	  				{
+		   				thead += '	<th>시각</th>';
+		  				thead += '	<th>활동</th>';  					
+	  				}
+
+	  				thead += '</tr></thead>';
+	  				$(thead).appendTo($table);
+	 
+	  				$('<tbody>').appendTo($table);
+
+		  			for (var i=0; i<8; i++) {
+		  				var row = '<tr>';
+
+		  				for (var j = 0; j < 3; j++)
+		  				{
+			  				row += '<td>' + (i+j*8) + ' ~ ' + (i+j*8+1) + '시</td>';
+			  				row += '<td id="'+(i+j*8)+'" class="act" ondrop="drop(event)" ondragover="allowDrop(event)">';
+			  				
+		  					if (results[i+j*8] != undefined) {
+		  						row += results[i+j*8];
+		  					}
+
+			  				row += '</td>';			
+		  				}
+
+		  				row += '</tr>';
+		  				$(row).appendTo($table);
+		  			}; 
+
+		  			$('</tbody>').appendTo($table);
+		  			$('#dayTable').html($table);
+				});
+  			}
+
+
+  			var showCurrentTime = function() {
+  				setInterval(function() {
+  					var today = new Date();
+  					var now = (today.getMonth()+1)+ "월 " + today.getDate()+"일 "+today.getHours()+"시 "+today.getMinutes()+"분 "+today.getSeconds()+"초";
+
+  					$('#currentTime').html(now);
+  				}, 1000);
+  			}
+
+
+  			$('button[id=add]').click(function() {
+  				var hour = $('input[name=hour]').val();
+  				var activity = $('input[name=activity]').val();
+  				var dateToChange = $('#setDate').val();
+  				var dateArray = dateToChange.split("-");
+  				var currentDate = dateArray[1] + "" + dateArray[2]; 
+
+  				if (hour != '')
+  				{
+	  				$.ajax('/user/records/'+ currentDate, {
+	  					type: 'POST',
+	  					data: { 
+	  						date: today,
+	  						hour: hour,
+	  						activity: activity 
+	  					},
+	  					success: function () {
+		  					var $addPos = $('td[id='+hour+']');
+		  					var previousAct = $addPos.html();
+			  				$addPos.html(activity);
+
+			  				$('.input-act').val("");
+			  				console.log(hour +'시에 \"'+ activity + '\" 활동을 추가했습니다.');
+			  				updateTodayList(activity, previousAct);
+			  				drawChart();
+							fetchFavoriteList();  					
+	  					},
+	  					error: function () {
+	  						alert("오류가 발생했습니다.");
+	  					}
+	  				})
+	  			}
+  			});
+
+  			$('button[id=delete').click(function() {
+  				console.log('입력 내용을 지웁니다.');
+  				$('.input-act').val("");
+  			});
+
+  			fetchFavoriteList();
+  			showCurrentTime();
+  			constructTable(today);
+  			fetchingSpecificDayList(today);
+  		});
+  	</script>
+
+
+  	<!-- 차트 -->
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+	<script type="text/javascript">
+		google.charts.load("current", {packages:["corechart"]});
+		google.charts.setOnLoadCallback(drawChart);
+		function drawChart() {
+			var data = google.visualization.arrayToDataTable(todayData);
+			var options = {
+			  title: 'My Daily Activities',
+			  pieHole: 0.4,
+			  width: 800,
+			  height: 600
+			};
+
+			var chart = new google.visualization.PieChart(document.getElementById('donutchart'));
+			chart.draw(data, options);
+		}
+	</script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <div class="container">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#">메인으로</a>
+            </div>
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav">
+                    <li>
+                        <a href="#activities">기입하기</a>
+                    </li>
+                    <li>
+                        <a href="#statistics">하루통계</a>
+                    </li>
+                    <li>
+                    	<a href="/logout">로그아웃</a>
+                    </li>
+                    <li>
+                    	<form id="setDate-form" class="navbar-form navbar-left">
+                    		<div class="form-group">
+	                    		<input type="date" id="setDate" />
+	                    		<input id="changeDate" class="btn btn-default btn-sm" type="submit" value="날짜 이동">
+                    		</div>
+                    	</form>
+                    </li>
+                </ul>
+            </div>
+            <!-- /.navbar-collapse -->
+        </div>
+        <!-- /.container -->
+    </nav>
+
+    <!-- Full Width Image Header -->
+    <header class="header-image">
+        <div class="headline">
+            <div class="container">
+				<h2>하루를 기록하세요!</h2>
+                <h2><span id="currentTime">현재 시각을 출력합니다...</span></h2>
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Content -->
+    <div class="container">
+        <!-- First Featurette -->
+        <div class="featurette" id="activities">
+        	<hr class="featurette-divider">
+			<div id="activity-list">
+				<fieldset id="favorites">
+				</fieldset>
+			</div>
+			<div id="addActivity">
+				<fieldset>
+					<label>활동</label>
+					<input type="text" class="input-act" name="activity" id="basic" />
+					<label>시각</label>
+					<input type="number" class="input-act" name="hour" min="0" max="24" >
+					<button class="btn btn-primary" id="add">추가하기</button>
+					<button class="btn btn-warning" id="delete">지우기</button>
+				</fieldset>
+				<div id="dayTable">
+				</div>
+			</div>
+        </div>
+
+        <!-- Second Featurette -->
+        <div class="featurette" id="statistics">
+        	<hr class="featurette-divider">
+			<h2>오늘 활동을 확인하세요!</h2>
+			<div id="donutchart"></div>
+        </div>
+
+        <hr class="featurette-divider">
+    </div>
+</body>
+</html>
